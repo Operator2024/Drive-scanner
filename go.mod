@@ -1,3 +1,3 @@
 module github.com/Operator2024/drive_scanner
 
-go 1.18
+go 1.17

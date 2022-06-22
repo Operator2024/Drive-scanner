@@ -23,13 +23,13 @@ type Device struct {
 	Name string `json:"name"`
 }
 
-// DeviceInfo is
-type DeviceInfo struct {
+// DeviceInfoRAW is
+type DeviceInfoRAW struct {
 	Vendor       string     `json:"vendor"`
 	Product      string     `json:"product"`
 	Model        string     `json:"model_name"`
 	SN           string     `json:"serial_number"`
-	Rev          string     `json:"revision"`
+	Rev         string     `json:"revision"`
 	FW           string     `json:"firmware_version"`
 	Type         int        `json:"rotation_rate"`
 	UserCapacity DeviceSize `json:"user_capacity"`
@@ -40,6 +40,18 @@ type DeviceInfo struct {
 type DeviceSize struct {
 	Blocks int `json:"blocks"`
 	Bytes  int `json:"bytes"`
+}
+
+// DeviceInfo is
+type DeviceInfo struct {
+	Vendor  string `json:"vendor"`
+	Product *string `json:"product"`
+	Model   string `json:"model_name"`
+	SN      string `json:"serial_number"`
+	Rev     *string `json:"revision"`
+	FW      string `json:"firmware_version"`
+	Type    string `json:"type"`
+	Size    int    `json:"size"`
 }
 
 // GetDeviceName is
@@ -69,7 +81,7 @@ func main() {
 	} else {
 		r, _ := regexp.Compile("\"name\":.{1,},")
 		var drive Device
-		var totalDeviceList = make(map[string]string)
+		var totalDeviceList = make(map[string]DeviceInfo)
 		deviceName := GetDeviceName()
 
 		for _, val := range r.FindAllString(string(deviceName), -1) {
@@ -82,7 +94,8 @@ func main() {
 			cmd := exec.Command("smartctl", "-i", drive.Name, "-j")
 			stdout, err := cmd.Output()
 
-			var d DeviceInfo
+			var d DeviceInfoRAW
+			var o DeviceInfo
 			err = json.Unmarshal([]byte(stdout), &d)
 			if err != nil {
 				fmt.Println(err.Error())
@@ -101,27 +114,47 @@ func main() {
 							d.Model = strings.Replace(strings.ToLower(d.Model), strings.ToLower(v), "", -1)
 						}
 					}
+					if strings.Contains(strings.ToLower(d.Model), strings.ToLower("ST")) {
+						if d.Vendor == "" {
+							d.Vendor = "Seagate"
+						}
+					}
 				}
 			}
-			d.Model = strings.TrimLeft(strings.Replace(d.Model, "_", " ", -1), " ")
-			jsonDevInfo := fmt.Sprintf(`{"Vendor":"%s", "Model":"%s", "SN":"%s", "FW":"%s"`, d.Vendor, d.Model, d.SN, d.FW)
+			o.Model = strings.TrimLeft(strings.Replace(d.Model, "_", " ", -1), " ")
+			o.Vendor = d.Vendor
+			o.SN = d.SN
+			o.FW = d.FW
 			if d.Type == 0 {
-				jsonDevInfo += ", \"Type\":\"Solid State Drive\""
+				o.Type = "Solid State Drive"
 			} else {
-				jsonDevInfo += ", \"Type\":\"Hard Disk Drive\""
+				o.Type = "Hard Disk Drive"
 			}
 
 			if (d.UserCapacity.Bytes == 0) && (d.Size != 0) {
 				// nvme_total_capacity
-				jsonDevInfo += fmt.Sprintf(`, "Size":"%d"}`, d.Size)
-
+				o.Size = d.Size
 			} else {
-				jsonDevInfo += fmt.Sprintf(`, "Size":"%d"}`, d.UserCapacity.Bytes)
+				o.Size = d.UserCapacity.Bytes
 			}
 
-			totalDeviceList[drive.Name] = jsonDevInfo
+			if d.Rev != ""{
+				o.Rev = &d.Rev
+			} else {
+				o.Rev = nil
+			}
+
+			if d.Product != ""{
+				o.Product = &d.Product
+			} else {
+				o.Product = nil
+			}
+
+			totalDeviceList[drive.Name] = o
 		}
+
 		result, _ := json.Marshal(totalDeviceList)
-		fmt.Printf("%v", string(result))
+		fmt.Printf("%v\n", string(result))
+		// f(totalDeviceList)
 	}
 }
