@@ -1,5 +1,5 @@
 BINARY_NAME=drive_scanner
-VERSION=${VER}
+VERSION=${DS_VER}
 DATE=$(shell date -u +'%Y-%m-%d %I:%M:%S%p %Z')
 
 build:

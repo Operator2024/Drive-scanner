@@ -1,0 +1,7 @@
+		// debug print
+		// v := reflect.ValueOf(d)
+		// fmt.Printf("Drive - %v\n", drive.Name)
+		// for i := 0; i < v.Type().NumField(); i++ {
+		// 	fmt.Printf("Key is %v, Value is %v\n", v.Type().Field(i).Name, v.Field(i).Interface())
+		// }
+		// fmt.Println()

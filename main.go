@@ -29,7 +29,7 @@ type DeviceInfoRAW struct {
 	Product      string     `json:"product"`
 	Model        string     `json:"model_name"`
 	SN           string     `json:"serial_number"`
-	Rev         string     `json:"revision"`
+	Rev          string     `json:"revision"`
 	FW           string     `json:"firmware_version"`
 	Type         int        `json:"rotation_rate"`
 	UserCapacity DeviceSize `json:"user_capacity"`
@@ -44,14 +44,14 @@ type DeviceSize struct {
 
 // DeviceInfo is
 type DeviceInfo struct {
-	Vendor  string `json:"vendor"`
+	Vendor  string  `json:"vendor"`
 	Product *string `json:"product"`
-	Model   string `json:"model_name"`
-	SN      string `json:"serial_number"`
+	Model   string  `json:"model_name"`
+	SN      string  `json:"serial_number"`
 	Rev     *string `json:"revision"`
-	FW      string `json:"firmware_version"`
-	Type    string `json:"type"`
-	Size    int    `json:"size"`
+	FW      string  `json:"firmware_version"`
+	Type    string  `json:"type"`
+	Size    int     `json:"size"`
 }
 
 // GetDeviceName is
@@ -138,13 +138,13 @@ func main() {
 				o.Size = d.UserCapacity.Bytes
 			}
 
-			if d.Rev != ""{
+			if d.Rev != "" {
 				o.Rev = &d.Rev
 			} else {
 				o.Rev = nil
 			}
 
-			if d.Product != ""{
+			if d.Product != "" {
 				o.Product = &d.Product
 			} else {
 				o.Product = nil
