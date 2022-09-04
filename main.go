@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"os"
 	"os/exec"
 	"regexp"
 	"runtime"
@@ -11,19 +12,21 @@ import (
 	"time"
 )
 
+var name = "Drive-scanner"
+
 var (
-	version        string
-	date           string
-	buildDate      time.Time
-	goBuildVersion string
+	version          string
+	date             string
+	compileDate      time.Time
+	goCompileVersion string
 )
 
-// Device is
+// Device contains the name of the drive that processed now.
 type Device struct {
 	Name string `json:"name"`
 }
 
-// DeviceInfoRAW is
+// DeviceInfoRAW contains raw data from smartctl in JSON format.
 type DeviceInfoRAW struct {
 	Vendor       string     `json:"vendor"`
 	Product      string     `json:"product"`
@@ -36,13 +39,13 @@ type DeviceInfoRAW struct {
 	Size         int        `json:"nvme_total_capacity"`
 }
 
-// DeviceSize is
+// DeviceSize contains fields related to disk size.
 type DeviceSize struct {
 	Blocks int `json:"blocks"`
 	Bytes  int `json:"bytes"`
 }
 
-// DeviceInfo is
+// DeviceInfo contains already processed disk data
 type DeviceInfo struct {
 	Vendor  string  `json:"vendor"`
 	Product *string `json:"product"`
@@ -54,7 +57,7 @@ type DeviceInfo struct {
 	Size    int     `json:"size"`
 }
 
-// GetDeviceName is
+// GetDeviceName only returns the drive name.
 func GetDeviceName() []byte {
 	cmd := exec.Command("smartctl", "--scan", "-j")
 	stdout, err := cmd.Output()
@@ -65,21 +68,32 @@ func GetDeviceName() []byte {
 	return stdout
 }
 
+// Usage overrides method 'Usage' from flag.
+var Usage = func() {
+	fmt.Fprintf(os.Stderr, "Usage of %s:\n", name)
+
+	flag.PrintDefaults()
+}
+
 func main() {
-	var buildVer bool
-	flag.BoolVar(&buildVer, "V", false, "Show version")
+	var buildVersion bool
+	flag.BoolVar(&buildVersion, "V", false, "This key allows you to get the current version")
 
 	if version != "" {
-		goBuildVersion = runtime.Version()
-		buildDate, _ = time.Parse("2006-01-02 03:04:05PM MST", date)
+		goCompileVersion = runtime.Version()
+		compileDate, _ = time.Parse("2006-01-02 03:04:05PM MST", date)
 	}
-
+	flag.Usage = Usage
 	flag.Parse()
 
-	if buildVer {
-		fmt.Printf("Version: %s, build info: %s [%s]\n", version, goBuildVersion, buildDate.Format("2006-01-02 03:04:05PM MST"))
+	if buildVersion {
+		fmt.Printf("Version: %s, build info: %s [%s]\n", version, goCompileVersion, compileDate.Format("2006-01-02 03:04:05PM MST"))
 	} else {
 		r, _ := regexp.Compile("\"name\":.{1,},")
+
+		storage := make(map[string][]map[string]DeviceInfo)
+		storage[name] = make([]map[string]DeviceInfo, 1)
+
 		var drive Device
 		var totalDeviceList = make(map[string]DeviceInfo)
 		deviceName := GetDeviceName()
@@ -152,9 +166,8 @@ func main() {
 
 			totalDeviceList[drive.Name] = o
 		}
-
-		result, _ := json.Marshal(totalDeviceList)
+		storage[name][0] = totalDeviceList
+		result, _ := json.Marshal(storage)
 		fmt.Printf("%v\n", string(result))
-		// f(totalDeviceList)
 	}
 }
